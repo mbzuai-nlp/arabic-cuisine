@@ -1,0 +1,45 @@
+base_models:
+  gemma9b:
+    hf_id: "google/gemma-3-1b-it"
+    chat_template: "auto"
+    max_len: 2048
+    stop: []
+
+  qwen3_8b:
+    hf_id: "Qwen/Qwen3-8B"
+    chat_template: "auto"
+    max_len: 4096
+    stop: []
+
+  llama33_8b:
+    hf_id: "meta-llama/Llama-3.3-8B-Instruct"
+    chat_template: "auto"
+    max_len: 8192
+    stop: []
+
+train_targets:
+  - gemma9b
+  - qwen3_8b
+  - llama33_8b
+
+lora_overrides:
+  gemma9b:
+    r: 64
+    alpha: 16
+    dropout: 0.05
+    target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+    four_bit: true
+
+  qwen3_8b:
+    r: 32
+    alpha: 64
+    dropout: 0.05
+    target_modules: ["q_proj", "v_proj"]
+    four_bit: true
+
+  llama33_8b:
+    r: 16
+    alpha: 32
+    dropout: 0.05
+    target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+    four_bit: true

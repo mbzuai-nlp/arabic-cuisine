@@ -1,0 +1,26 @@
+# Core dependencies
+pandas
+openpyxl
+transformers
+torch
+datasets
+
+# Fine-tuning dependencies
+trl
+peft
+accelerate
+
+# Evaluation dependencies
+nltk
+bert-score
+
+# API dependencies (optional - only needed for zero-shot with APIs)
+openai
+google-generativeai
+
+# Environment management
+python-dotenv
+
+# Development dependencies
+jupyter
+notebook

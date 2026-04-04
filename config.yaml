@@ -1,0 +1,32 @@
+# config.yaml
+paths:
+  lora_out: "dialect_translation/models"
+  logs_out: "outputs/logs"
+
+train:
+  num_train_epochs: 3
+  learning_rate: 2.0e-4
+  weight_decay: 0.0
+
+  # Effective batch = per_device * grad_accum
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
+
+  max_grad_norm: 1.0
+  warmup_ratio: 0.03
+
+  logging_steps: 10
+  save_steps: 500
+
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+
+  lora_defaults:
+    r: 8
+    alpha: 16
+    dropout: 0.05
+    target_modules: null
+    four_bit: true
+
+seed: 42
