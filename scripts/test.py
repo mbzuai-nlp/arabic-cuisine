@@ -2,39 +2,23 @@
 # -*- coding: utf-8 -*-
 
 """
-SFT Model Testing Script
-
-Features:
-- Base model + LoRA adapter loading
-- Robust system-prompt detection (Gemma-safe)
-- Chat-template–consistent prompting
-- Safe resume
-- Atomic save after each sample
+Instruction-tuned model testing script.
 """
 
 import os
 import json
 import argparse
 import time
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
-
-# ------------------------------------------------
-# System prompt
-# ------------------------------------------------
-SYSTEM_PROMPT = (
-    "You are a professional Arabic translation system specialized in "
-    "Modern Standard Arabic (MSA) and regional Arabic dialects.\n"
-    "Rules:\n"
-    "1. Output only the translated text in Arabic.\n"
-    "2. Do not add explanations, comments, labels, or quotation marks.\n"
-    "3. Preserve meaning, tone, and level of formality.\n"
-    "4. Do not change names, numbers, or entities.\n"
-    "5. If the input already matches the target variety, return it unchanged."
+from utils import (
+    format_instruction_prompt,
+    load_instruction_datasets,
+    select_dataset_split,
 )
 
 
@@ -56,11 +40,13 @@ def load_sft_lora_model(adapter_path: str):
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
-    model = AutoModelForCausalLM.from_pretrained(
-        base_hf_id,
-        device_map="auto",
-        torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
-    )
+    model_kwargs = {
+        "torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+    }
+    if torch.cuda.is_available():
+        model_kwargs["device_map"] = "auto"
+
+    model = AutoModelForCausalLM.from_pretrained(base_hf_id, **model_kwargs)
 
     model = PeftModel.from_pretrained(model, adapter_path)
     model.eval()
@@ -69,63 +55,14 @@ def load_sft_lora_model(adapter_path: str):
 
 
 # ------------------------------------------------
-# System-role capability probe (robust)
+# Prompt construction
 # ------------------------------------------------
-def supports_system_role(tokenizer) -> bool:
-    """
-    Gemma tokenizer does NOT support system role.
-    Most others do.
-    """
-    try:
-        tokenizer.apply_chat_template(
-            [{"role": "system", "content": "test"}],
-            tokenize=False,
-        )
-        return True
-    except Exception:
-        return False
-
-
-# ------------------------------------------------
-# Message builder (authoritative)
-# ------------------------------------------------
-def build_messages(
-    record: Dict[str, Any],
-    direction: str,
-    tokenizer,
-) -> List[Dict[str, str]]:
-    region = record["region"]
-    country = record["country"]
-
-    if direction == "msa_to_dialect":
-        user_prompt = (
-            f"Translate the following Modern Standard Arabic (MSA) text into the "
-            f"{region} dialect of {country}. Do not include any explanation, "
-            f"just return the Arabic translation.\n\n"
-            f"MSA Text: {record['dialogue_msa']}\n\n"
-            f"Dialect Translation:"
-        )
-    else:
-        user_prompt = (
-            f"Translate the following Arabic text from the {region} dialect of "
-            f"{country} into Modern Standard Arabic (MSA). Do not include any "
-            f"explanation, just return the Arabic translation.\n\n"
-            f"Dialect Text: {record['dialogue_dialect']}\n\n"
-            f"MSA Translation:"
-        )
-
-    if supports_system_role(tokenizer):
-        return [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ]
-    else:
-        return [
-            {
-                "role": "user",
-                "content": f"{SYSTEM_PROMPT}\n\n{user_prompt}",
-            }
-        ]
+def build_prompt(record: Dict[str, Any]) -> str:
+    return format_instruction_prompt(
+        record["instruction"],
+        record.get("input", ""),
+        output_text=None,
+    )
 
 
 # ------------------------------------------------
@@ -135,37 +72,33 @@ def build_messages(
 def generate(
     model,
     tokenizer,
-    messages: List[Dict[str, str]],
+    prompt: str,
     max_new_tokens: int = 4096,
 ) -> str:
-    prompt = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True,
-    )
-
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    model_device = next(model.parameters()).device
+    inputs = tokenizer(prompt, return_tensors="pt").to(model_device)
 
     outputs = model.generate(
         **inputs,
         max_new_tokens=max_new_tokens,
         do_sample=False,
+        pad_token_id=tokenizer.pad_token_id,
         eos_token_id=tokenizer.eos_token_id,
     )
 
-    decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return decoded[len(prompt) :].strip()
+    generated_tokens = outputs[0][inputs["input_ids"].shape[-1] :]
+    return tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
 
 
 # ------------------------------------------------
 # Safe JSON helpers
 # ------------------------------------------------
-def load_existing_results(path: str) -> Dict[int, Dict]:
+def load_existing_results(path: str) -> Dict[str, Dict[str, Any]]:
     if not os.path.exists(path):
         return {}
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return {item["id"]: item for item in data}
+    return {str(item["id"]): item for item in data}
 
 
 def atomic_write_json(data: List[Dict], path: str):
@@ -176,29 +109,22 @@ def atomic_write_json(data: List[Dict], path: str):
 
 
 # ------------------------------------------------
-# Data loading
-# ------------------------------------------------
-def load_data(path: str) -> List[Dict[str, Any]]:
-    with open(path, "r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f]
-
-
-# ------------------------------------------------
 # Main
 # ------------------------------------------------
 def main():
-    ap = argparse.ArgumentParser("SFT model testing (safe + resume)")
-    ap.add_argument("--data_path", default="dialect_translation/data/test.jsonl")
+    ap = argparse.ArgumentParser("Instruction-tuned model testing")
+    ap.add_argument("--data_path", default="data")
     ap.add_argument("--model_path", required=True)
-    ap.add_argument("--output_dir", default="dialect_translation/output/sft/")
+    ap.add_argument("--output_dir", default="outputs/sft")
+    ap.add_argument("--split", default="test")
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--max_new_tokens", type=int, default=512)
     args = ap.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    data = load_data(args.data_path)
-    if args.limit:
-        data = data[: args.limit]
+    dataset_dict = load_instruction_datasets(args.data_path, eval_split=0.0)
+    eval_dataset, used_split = select_dataset_split(dataset_dict, args.split)
 
     model_name = os.path.basename(args.model_path)
     output_path = os.path.join(args.output_dir, f"{model_name}.json")
@@ -206,7 +132,11 @@ def main():
     existing = load_existing_results(output_path)
     done_ids = set(existing.keys())
 
-    print(f"[INFO] Loaded {len(data)} samples")
+    total_samples = len(eval_dataset)
+    if args.limit is not None:
+        total_samples = min(total_samples, args.limit)
+
+    print(f"[INFO] Loaded {total_samples} samples from split '{used_split}'")
     print(f"[INFO] Resuming from {len(done_ids)} completed samples")
 
     tokenizer, model = load_sft_lora_model(args.model_path)
@@ -214,30 +144,35 @@ def main():
     results = list(existing.values())
     start = time.time()
 
-    for idx, record in enumerate(data, 1):
-        rid = record["id"]
+    for idx, record in enumerate(eval_dataset, 1):
+        if args.limit is not None and idx > args.limit:
+            break
+
+        rid = str(record.get("id", idx - 1))
         if rid in done_ids:
             continue
 
-        print(f"[{idx}/{len(data)}] Processing ID={rid}")
+        print(f"[{idx}/{total_samples}] Processing ID={rid}")
 
         try:
-            msa_messages = build_messages(record, "msa_to_dialect", tokenizer)
-            msa_out = generate(model, tokenizer, msa_messages)
-
-            dia_messages = build_messages(record, "dialect_to_msa", tokenizer)
-            dia_out = generate(model, tokenizer, dia_messages)
+            prompt = build_prompt(record)
+            prediction = generate(
+                model,
+                tokenizer,
+                prompt,
+                max_new_tokens=args.max_new_tokens,
+            )
 
             item = {
                 "id": rid,
-                "region": record["region"],
-                "country": record["country"],
-                "original_msa": record["dialogue_msa"],
-                "original_dialect": record["dialogue_dialect"],
-                "msa_to_dialect_prediction": msa_out,
-                "dialect_to_msa_prediction": dia_out,
+                "instruction": record.get("instruction", ""),
+                "input": record.get("input", ""),
+                "reference": record.get("output", ""),
+                "prediction": prediction,
                 "model": model_name,
             }
+            if "language" in record:
+                item["language"] = record["language"]
 
         except Exception as e:
             print(f"[ERROR] ID={rid}: {e}")

@@ -10,15 +10,18 @@ export CUDA_VISIBLE_DEVICES=0
 # Configuration
 # ---------------------------------
 PYTHON_BIN=python
-TEST_SCRIPT="dialect_translation/scripts/sft/test.py"
-DATA_PATH="dialect_translation/data/test.jsonl"
-OUTPUT_DIR="dialect_translation/output/sft"
+TEST_SCRIPT="scripts/test.py"
+DATA_PATH="data"
+OUTPUT_DIR="outputs/sft"
 
 # Explicit model list (recommended)
 MODELS=(
-  "dialect_translation/models/gemma9b"
-  "dialect_translation/models/qwen3_8b"
-  "dialect_translation/models/llama33_8b"
+  "models/gemma12b"
+  "models/qwen3_8b"
+  "models/llama33_8b"
+  "models/jais_8b"
+  "models/allam_7b"
+  "models/fanar_9b"
 )
 
 # Optional sample limit (comment out for full run)

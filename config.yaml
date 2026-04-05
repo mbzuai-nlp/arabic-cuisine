@@ -1,6 +1,6 @@
 # config.yaml
 paths:
-  lora_out: "dialect_translation/models"
+  lora_out: "models"
   logs_out: "outputs/logs"
 
 train:
@@ -10,13 +10,18 @@ train:
 
   # Effective batch = per_device * grad_accum
   per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
   gradient_accumulation_steps: 16
 
   max_grad_norm: 1.0
   warmup_ratio: 0.03
 
   logging_steps: 10
+  save_strategy: "steps"
   save_steps: 500
+  eval_split: 0.05
+  eval_strategy: "steps"
+  eval_steps: 500
 
   bf16: true
   fp16: false
