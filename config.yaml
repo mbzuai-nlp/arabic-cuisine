@@ -8,7 +8,6 @@ train:
   learning_rate: 2.0e-4
   weight_decay: 0.0
 
-  # Effective batch = per_device * grad_accum
   per_device_train_batch_size: 1
   per_device_eval_batch_size: 1
   gradient_accumulation_steps: 16
@@ -17,11 +16,9 @@ train:
   warmup_ratio: 0.03
 
   logging_steps: 10
-  save_strategy: "steps"
-  save_steps: 500
+  save_strategy: "epoch"
   eval_split: 0.05
-  eval_strategy: "steps"
-  eval_steps: 500
+  eval_strategy: "epoch"
 
   bf16: true
   fp16: false

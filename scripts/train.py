@@ -147,8 +147,7 @@ def main():
             max_grad_norm=cfg["train"]["max_grad_norm"],
             warmup_ratio=cfg["train"]["warmup_ratio"],
             logging_steps=cfg["train"]["logging_steps"],
-            save_strategy=cfg["train"].get("save_strategy", "steps"),
-            save_steps=cfg["train"]["save_steps"],
+            save_strategy=cfg["train"].get("save_strategy", "epoch"),
             fp16=cfg["train"]["fp16"] and has_cuda,
             bf16=cfg["train"]["bf16"] and has_cuda,
             gradient_checkpointing=cfg["train"]["gradient_checkpointing"],
@@ -157,7 +156,6 @@ def main():
             report_to="none",
             packing=False,
             max_length=mcfg["max_len"],
-            completion_only_loss=True,
         )
 
         if eval_dataset is not None:
@@ -165,9 +163,7 @@ def main():
                 "per_device_eval_batch_size",
                 cfg["train"]["per_device_train_batch_size"],
             )
-            sft_kwargs["eval_strategy"] = cfg["train"].get("eval_strategy", "steps")
-            if cfg["train"].get("eval_steps"):
-                sft_kwargs["eval_steps"] = cfg["train"]["eval_steps"]
+            sft_kwargs["eval_strategy"] = cfg["train"].get("eval_strategy", "epoch")
             sft_kwargs["load_best_model_at_end"] = True
             sft_kwargs["metric_for_best_model"] = "eval_loss"
             sft_kwargs["greater_is_better"] = False
