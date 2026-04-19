@@ -1,38 +1,38 @@
 base_models:
-  gemma12b:
-    hf_id: "google/gemma-3-12b-it"
-    max_len: 4096
+  # gemma1b:
+  #   hf_id: "google/gemma-3-1b-it"
+  #   max_len: 4096
 
   qwen3_8b:
     hf_id: "Qwen/Qwen3-8B"
     max_len: 4096
 
-  llama33_8b:
-    hf_id: "meta-llama/Llama-3.3-8B-Instruct"
-    max_len: 8192
+  # llama33_8b:
+  #   hf_id: "meta-llama/Llama-3.3-8B-Instruct"
+  #   max_len: 8192
 
-  jais_8b:
-    hf_id: "inceptionai/Jais-2-8B-Chat"
-    max_len: 4096
+  # jais_8b:
+  #   hf_id: "inceptionai/Jais-2-8B-Chat"
+  #   max_len: 4096
 
-  allam_7b:
-    hf_id: "humain-ai/ALLaM-7B-Instruct-preview"
-    max_len: 4096
+  # allam_7b:
+  #   hf_id: "humain-ai/ALLaM-7B-Instruct-preview"
+  #   max_len: 4096
 
-  fanar_9b:
-    hf_id: "QCRI/Fanar-1-9B-Instruct"
-    max_len: 4096
+  # fanar_9b:
+  #   hf_id: "QCRI/Fanar-1-9B-Instruct"
+  #   max_len: 4096
 
 train_targets:
-  - gemma12b
-  - qwen3_8b
-  - llama33_8b
-  - jais_8b
-  - allam_7b
-  - fanar_9b
+  #- gemma1b
+   - qwen3_8b
+  # - llama33_8b
+  # - jais_8b
+  # - allam_7b
+  # - fanar_9b
 
 lora_overrides:
-  gemma12b:
+  gemma1b:
     r: 64
     alpha: 128
     dropout: 0.05

@@ -1,7 +1,4 @@
 import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
 import argparse, json
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
@@ -21,7 +18,7 @@ from utils import (
 # ------------------------------------------------
 # Model loading (supports QLoRA)
 # ------------------------------------------------
-def load_model(hf_id: str, four_bit: bool, lora_cfg: LoraConfig):
+def load_model(hf_id: str, four_bit: bool, lora_cfg: LoraConfig, local_rank: int = 0):
     quant = None
     if four_bit and torch.cuda.is_available():
         quant = BitsAndBytesConfig(
@@ -37,11 +34,11 @@ def load_model(hf_id: str, four_bit: bool, lora_cfg: LoraConfig):
     tokenizer.padding_side = "right"
 
     model_kwargs = {
-        "torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+        "dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
         "attn_implementation": "eager",
     }
     if torch.cuda.is_available():
-        model_kwargs["device_map"] = "auto"
+        model_kwargs["device_map"] = {"" : local_rank}
     if quant is not None:
         model_kwargs["quantization_config"] = quant
 
@@ -74,6 +71,9 @@ def formatting_func_builder():
 # Main
 # ------------------------------------------------
 def main():
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    is_main = local_rank == 0
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--models", required=True)
@@ -100,17 +100,24 @@ def main():
     elif "validation" in dataset_dict:
         eval_dataset, eval_split_name = select_dataset_split(dataset_dict, "validation")
 
-    print(
-        f"[INFO] Loaded {len(train_dataset)} training samples from split '{train_split_name}'"
-    )
-    if eval_dataset is not None:
+    if is_main:
         print(
-            f"[INFO] Loaded {len(eval_dataset)} evaluation samples from split '{eval_split_name}'"
+            f"[INFO] Loaded {len(train_dataset)} training samples from split '{train_split_name}'"
         )
+        if eval_dataset is not None:
+            print(
+                f"[INFO] Loaded {len(eval_dataset)} evaluation samples from split '{eval_split_name}'"
+            )
 
-    for alias in reg["train_targets"]:
+    total = len(reg["train_targets"])
+    for idx, alias in enumerate(reg["train_targets"], start=1):
         mcfg = reg["base_models"][alias]
         ovr = (reg.get("lora_overrides") or {}).get(alias, {})
+
+        if is_main:
+            print(f"\n{'='*60}")
+            print(f"[SFT] Model {idx}/{total}: {alias}  ({mcfg['hf_id']})")
+            print(f"{'='*60}\n")
 
         lora_cfg = LoraConfig(
             r=ovr.get("r", cfg["train"]["lora_defaults"]["r"]),
@@ -128,7 +135,7 @@ def main():
             four_bit = False
 
         tokenizer, model = load_model(
-            mcfg["hf_id"], four_bit=four_bit, lora_cfg=lora_cfg
+            mcfg["hf_id"], four_bit=four_bit, lora_cfg=lora_cfg, local_rank=local_rank
         )
 
         out_dir = os.path.join(cfg["paths"]["lora_out"], alias)
@@ -151,11 +158,13 @@ def main():
             fp16=cfg["train"]["fp16"] and has_cuda,
             bf16=cfg["train"]["bf16"] and has_cuda,
             gradient_checkpointing=cfg["train"]["gradient_checkpointing"],
-            dataloader_num_workers=0,
+            gradient_checkpointing_kwargs={"use_reentrant": False},
+            dataloader_num_workers=4,
             dataloader_pin_memory=has_cuda,
             report_to="none",
             packing=False,
             max_length=mcfg["max_len"],
+            ddp_find_unused_parameters=True,
         )
 
         if eval_dataset is not None:
@@ -164,9 +173,10 @@ def main():
                 cfg["train"]["per_device_train_batch_size"],
             )
             sft_kwargs["eval_strategy"] = cfg["train"].get("eval_strategy", "epoch")
-            sft_kwargs["load_best_model_at_end"] = True
-            sft_kwargs["metric_for_best_model"] = "eval_loss"
-            sft_kwargs["greater_is_better"] = False
+            # load_best_model_at_end is incompatible with DDP + QLoRA (Trainer tries
+            # to reload with device_map='auto', conflicting with the per-rank device map).
+            # The final checkpoint is saved explicitly below instead.
+            sft_kwargs["load_best_model_at_end"] = False
         else:
             sft_kwargs["eval_strategy"] = "no"
 
@@ -181,27 +191,29 @@ def main():
             processing_class=tokenizer,
         )
 
-        model.print_trainable_parameters()
+        if is_main:
+            model.print_trainable_parameters()
         trainer.train()
 
-        # Save adapters only
-        trainer.model.save_pretrained(out_dir)
-        tokenizer.save_pretrained(out_dir)
-        with open(os.path.join(out_dir, "run_meta.json"), "w") as f:
-            json.dump(
-                {
-                    "alias": alias,
-                    "hf_id": mcfg["hf_id"],
-                    "four_bit": four_bit,
-                    "train_size": len(train_dataset),
-                    "eval_size": len(eval_dataset) if eval_dataset is not None else 0,
-                    "dataset_path": args.dataset,
-                },
-                f,
-                indent=2,
-            )
-
-        print(f"[OK] Saved LoRA adapters → {out_dir}")
+        # Save adapters only (main process only)
+        if is_main:
+            trainer.model.save_pretrained(out_dir)
+            tokenizer.save_pretrained(out_dir)
+        if is_main:
+            with open(os.path.join(out_dir, "run_meta.json"), "w") as f:
+                json.dump(
+                    {
+                        "alias": alias,
+                        "hf_id": mcfg["hf_id"],
+                        "four_bit": four_bit,
+                        "train_size": len(train_dataset),
+                        "eval_size": len(eval_dataset) if eval_dataset is not None else 0,
+                        "dataset_path": args.dataset,
+                    },
+                    f,
+                    indent=2,
+                )
+            print(f"[OK] Saved LoRA adapters → {out_dir}")
 
 
 if __name__ == "__main__":
