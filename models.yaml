@@ -3,9 +3,9 @@ base_models:
   #   hf_id: "google/gemma-3-1b-it"
   #   max_len: 4096
 
-  qwen3_8b:
-    hf_id: "Qwen/Qwen3-8B"
-    max_len: 4096
+  # qwen3_8b:
+  #   hf_id: "Qwen/Qwen3-8B"
+  #   max_len: 4096
 
   # llama33_8b:
   #   hf_id: "meta-llama/Llama-3.3-8B-Instruct"
@@ -19,17 +19,17 @@ base_models:
   #   hf_id: "humain-ai/ALLaM-7B-Instruct-preview"
   #   max_len: 4096
 
-  # fanar_9b:
-  #   hf_id: "QCRI/Fanar-1-9B-Instruct"
-  #   max_len: 4096
+  fanar_9b:
+    hf_id: "QCRI/Fanar-1-9B-Instruct"
+    max_len: 4096
 
 train_targets:
   #- gemma1b
-   - qwen3_8b
+  #  - qwen3_8b
   # - llama33_8b
   # - jais_8b
   # - allam_7b
-  # - fanar_9b
+  - fanar_9b
 
 lora_overrides:
   gemma1b:
@@ -44,7 +44,7 @@ lora_overrides:
     alpha: 64
     dropout: 0.05
     target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
-    four_bit: true
+    four_bit: false
 
   llama33_8b:
     r: 16
@@ -72,4 +72,4 @@ lora_overrides:
     alpha: 64
     dropout: 0.05
     target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
-    four_bit: true
+    four_bit: false

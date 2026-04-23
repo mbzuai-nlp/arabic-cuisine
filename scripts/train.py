@@ -35,7 +35,7 @@ def load_model(hf_id: str, four_bit: bool, lora_cfg: LoraConfig, local_rank: int
 
     model_kwargs = {
         "dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
-        "attn_implementation": "eager",
+        "attn_implementation": "flash_attention_2", #eager
     }
     if torch.cuda.is_available():
         model_kwargs["device_map"] = {"" : local_rank}
