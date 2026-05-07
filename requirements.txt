@@ -24,3 +24,6 @@ python-dotenv
 # Development dependencies
 jupyter
 notebook
+
+bitsandbytes>=0.46
+flash-attn

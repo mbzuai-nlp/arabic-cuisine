@@ -1,14 +1,14 @@
 base_models:
-  # gemma1b:
-  #   hf_id: "google/gemma-3-1b-it"
-  #   max_len: 4096
+  gemma12b:
+    hf_id: "google/gemma-3-12b-it"
+    max_len: 8192
 
   # qwen3_8b:
   #   hf_id: "Qwen/Qwen3-8B"
   #   max_len: 4096
 
   # llama33_8b:
-  #   hf_id: "meta-llama/Llama-3.3-8B-Instruct"
+  #   hf_id: "meta-llama/Meta-Llama-3-8B-Instruct"
   #   max_len: 8192
 
   # jais_8b:
@@ -19,25 +19,25 @@ base_models:
   #   hf_id: "humain-ai/ALLaM-7B-Instruct-preview"
   #   max_len: 4096
 
-  fanar_9b:
-    hf_id: "QCRI/Fanar-1-9B-Instruct"
-    max_len: 4096
+  # fanar_9b:
+  #   hf_id: "QCRI/Fanar-1-9B-Instruct"
+  #   max_len: 4096
 
 train_targets:
-  #- gemma1b
+  - gemma12b
   #  - qwen3_8b
   # - llama33_8b
   # - jais_8b
   # - allam_7b
-  - fanar_9b
+  # - fanar_9b
 
 lora_overrides:
-  gemma1b:
-    r: 64
-    alpha: 128
+  gemma12b:
+    r: 32
+    alpha: 64
     dropout: 0.05
     target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
-    four_bit: true
+    four_bit: false
 
   qwen3_8b:
     r: 32
@@ -51,21 +51,21 @@ lora_overrides:
     alpha: 32
     dropout: 0.05
     target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
-    four_bit: true
+    four_bit: false
 
   jais_8b:
     r: 32
     alpha: 64
     dropout: 0.05
     target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
-    four_bit: true
+    four_bit: false
 
   allam_7b:
     r: 32
     alpha: 64
     dropout: 0.05
     target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
-    four_bit: true
+    four_bit: false
 
   fanar_9b:
     r: 32
