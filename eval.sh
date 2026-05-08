@@ -45,7 +45,7 @@ SEED=42
 BATCH_SIZE=8                  # drop if you OOM; "auto" if you trust the harness
 DEVICE=cuda:0
 OVERWRITE=false               # true = re-run even if results exist
-SANITY_CHECK=true             # true = run base-only eval once for comparison
+EVAL_BASES=true               # true = run base-only eval for every unique base
 TASK="arabic_cuisine_benchmark"
 
 PROJECT_DIR="/workspace/arabic-cuisines"
@@ -54,12 +54,12 @@ ADAPTER_CACHE="${PROJECT_DIR}/.adapter_cache"   # snapshot_download lives here
 
 # Repos to evaluate (5 models). Checkpoints inside each repo are auto-discovered.
 REPOS=(
-    # "ArabicCuisineLab/arabic-cuisine-llama-3-8b-sft"
+    "ArabicCuisineLab/arabic-cuisine-llama-3-8b-sft"
     "ArabicCuisineLab/arabic-cuisine-jais-2-8b-chat-sft"
-    # "ArabicCuisineLab/arabic-cuisine-allam-7b-sft"
-    # "ArabicCuisineLab/arabic-cuisine-fanar-9b-sft"
-    # "ArabicCuisineLab/arabic-cuisine-qwen3-8b-sft"
-    # "ArabicCuisineLab/arabic-cuisine-gemma-3-12b-it-sft"
+    "ArabicCuisineLab/arabic-cuisine-allam-7b-sft"
+    "ArabicCuisineLab/arabic-cuisine-fanar-9b-sft"
+    "ArabicCuisineLab/arabic-cuisine-qwen3-8b-sft"
+    "ArabicCuisineLab/arabic-cuisine-gemma-3-12b-it-sft"
 )
 
 # Files we need from each checkpoint folder for inference. snapshot_download
@@ -204,24 +204,41 @@ for REPO in "${REPOS[@]}"; do
     done
 done
 echo "Total LoRA runs planned: ${TOTAL}"
-[ "$SANITY_CHECK" = true ] && echo "Plus 1 base-only sanity check."
+[ "$EVAL_BASES" = true ] && echo "Plus base-only eval for every unique base (up to ${#REPOS[@]})."
 
 # -----------------------------------------------------------------------------
-# Optional sanity check: evaluate the base model of the first repo with NO
-# adapter. If acc later matches the adapter run within ~0.5 pts, something's
-# wrong — the adapter isn't actually getting applied.
+# Base-only evaluations: evaluate every unique base model (read from each
+# adapter's adapter_config.json) with NO --peft. Deduplicated across repos so
+# if two adapters share a base, that base is only run once. These give you a
+# reference number per model family to compare adapter scores against.
 # -----------------------------------------------------------------------------
-if [ "$SANITY_CHECK" = true ] && [ ${#MODEL_CHECKPOINTS[@]} -gt 0 ]; then
-    FIRST_REPO="${REPOS[0]}"
-    FIRST_CKPT=$(echo "${MODEL_CHECKPOINTS[$FIRST_REPO]}" | awk '{print $1}')
-    echo -e "\n\033[1;36m=== Sanity check (base only, no adapter) ===\033[0m"
-    read ADAPTER_DIR BASE_MODEL <<< "$(fetch_adapter "${FIRST_REPO}" "${FIRST_CKPT}")"
-    SANITY_OUT="${RESULTS_PATH}/${TASK}/_sanity_base_only/$(basename ${BASE_MODEL})"
-    echo "    base = ${BASE_MODEL}"
-    run_lm_eval \
-        "pretrained=${BASE_MODEL},dtype=bfloat16,trust_remote_code=True" \
-        "${SANITY_OUT}" \
-        "base-only sanity"
+if [ "$EVAL_BASES" = true ] && [ ${#MODEL_CHECKPOINTS[@]} -gt 0 ]; then
+    echo -e "\n\033[1;36m=== Base-only evaluations (one per unique base) ===\033[0m"
+    declare -A SEEN_BASES
+    for REPO in "${REPOS[@]}"; do
+        [ -z "${MODEL_CHECKPOINTS[$REPO]:-}" ] && continue
+        FIRST_CKPT=$(echo "${MODEL_CHECKPOINTS[$REPO]}" | awk '{print $1}')
+
+        FETCH_OUT=$(fetch_adapter "${REPO}" "${FIRST_CKPT}") || {
+            echo -e "    \033[31mfailed to fetch adapter for ${REPO}; skipping its base\033[0m"
+            continue
+        }
+        read ADAPTER_DIR BASE_MODEL <<< "${FETCH_OUT}"
+
+        # Dedup: same base shared between adapters → eval it once
+        if [ -n "${SEEN_BASES[$BASE_MODEL]:-}" ]; then
+            echo "    (${BASE_MODEL} already covered, skipping)"
+            continue
+        fi
+        SEEN_BASES[$BASE_MODEL]=1
+
+        BASE_OUT="${RESULTS_PATH}/${TASK}/_base_only/$(basename ${BASE_MODEL})"
+        echo -e "\n  -> base = \033[1;34m${BASE_MODEL}\033[0m  (from ${REPO})"
+        run_lm_eval \
+            "pretrained=${BASE_MODEL},dtype=bfloat16,trust_remote_code=True" \
+            "${BASE_OUT}" \
+            "base-only ${BASE_MODEL}"
+    done
 fi
 
 # -----------------------------------------------------------------------------
@@ -263,7 +280,8 @@ for REPO in "${REPOS[@]}"; do
 done
 
 echo -e "\n\033[1;32mAll runs done.\033[0m  Results: ${RESULTS_PATH}/${TASK}/"
-if [ "$SANITY_CHECK" = true ]; then
-    echo "Compare _sanity_base_only/ accuracy to one of the adapter runs."
-    echo "If they're within ~0.5 pts of each other, the adapter isn't being applied."
+if [ "$EVAL_BASES" = true ]; then
+    echo "Per-base accuracies live under _base_only/<base_name>/ — compare each"
+    echo "model family's adapter runs against its corresponding base. If an"
+    echo "adapter run is within ~0.5 pts of its base, the adapter isn't being applied."
 fi
