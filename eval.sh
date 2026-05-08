@@ -48,17 +48,18 @@ OVERWRITE=false               # true = re-run even if results exist
 SANITY_CHECK=true             # true = run base-only eval once for comparison
 TASK="arabic_cuisine_benchmark"
 
-PROJECT_DIR="/Users/sarfrazahmad/Research/arabic-cuisines"
+PROJECT_DIR="/workspace/arabic-cuisines"
 RESULTS_PATH="${PROJECT_DIR}/eval_results"
 ADAPTER_CACHE="${PROJECT_DIR}/.adapter_cache"   # snapshot_download lives here
 
 # Repos to evaluate (5 models). Checkpoints inside each repo are auto-discovered.
 REPOS=(
+    # "ArabicCuisineLab/arabic-cuisine-llama-3-8b-sft"
     "ArabicCuisineLab/arabic-cuisine-jais-2-8b-chat-sft"
-    "ArabicCuisineLab/arabic-cuisine-allam-7b-sft"
-    "ArabicCuisineLab/arabic-cuisine-fanar-9b-sft"
-    "ArabicCuisineLab/arabic-cuisine-llama-3-8b-sft"
-    "ArabicCuisineLab/arabic-cuisine-qwen3-8b-sft"
+    # "ArabicCuisineLab/arabic-cuisine-allam-7b-sft"
+    # "ArabicCuisineLab/arabic-cuisine-fanar-9b-sft"
+    # "ArabicCuisineLab/arabic-cuisine-qwen3-8b-sft"
+    # "ArabicCuisineLab/arabic-cuisine-gemma-3-12b-it-sft"
 )
 
 # Files we need from each checkpoint folder for inference. snapshot_download
@@ -250,7 +251,8 @@ for REPO in "${REPOS[@]}"; do
 
         # 2. Build model_args: base loaded fresh, LoRA applied, tokenizer (and
         #    chat template) taken from the adapter folder.
-        MODEL_ARGS="pretrained=${BASE_MODEL},peft=${ADAPTER_DIR},tokenizer=${ADAPTER_DIR},dtype=bfloat16,trust_remote_code=True"
+        # MODEL_ARGS="pretrained=${BASE_MODEL},peft=${ADAPTER_DIR},tokenizer=${ADAPTER_DIR},dtype=bfloat16,trust_remote_code=True"
+        MODEL_ARGS="pretrained=${BASE_MODEL},peft=${ADAPTER_DIR},dtype=bfloat16,trust_remote_code=True"
 
         run_lm_eval "${MODEL_ARGS}" "${OUT_PATH}" "${MODEL_NAME}/${CKPT}"
         STATUS=$?
