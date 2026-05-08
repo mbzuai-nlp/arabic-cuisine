@@ -29,6 +29,7 @@ tmp/
 actual data/
 data_all/
 /data/sft_pool_50k.json
+eval_results_sarfraz/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
