@@ -143,6 +143,7 @@ def main():
         log_dir = os.path.join(cfg["paths"]["logs_out"], alias)
         ensure_dir(log_dir)
 
+        save_strategy = cfg["train"].get("save_strategy", "epoch")
         sft_kwargs = dict(
             output_dir=out_dir,
             logging_dir=log_dir,
@@ -154,7 +155,7 @@ def main():
             max_grad_norm=cfg["train"]["max_grad_norm"],
             warmup_ratio=cfg["train"]["warmup_ratio"],
             logging_steps=cfg["train"]["logging_steps"],
-            save_strategy=cfg["train"].get("save_strategy", "epoch"),
+            save_strategy=save_strategy,
             fp16=cfg["train"]["fp16"] and has_cuda,
             bf16=cfg["train"]["bf16"] and has_cuda,
             gradient_checkpointing=cfg["train"]["gradient_checkpointing"],
@@ -167,12 +168,21 @@ def main():
             ddp_find_unused_parameters=True,
         )
 
+        # Step-based saving requires save_steps; cap retained checkpoints if set.
+        if save_strategy == "steps" and "save_steps" in cfg["train"]:
+            sft_kwargs["save_steps"] = cfg["train"]["save_steps"]
+        if "save_total_limit" in cfg["train"]:
+            sft_kwargs["save_total_limit"] = cfg["train"]["save_total_limit"]
+
         if eval_dataset is not None:
             sft_kwargs["per_device_eval_batch_size"] = cfg["train"].get(
                 "per_device_eval_batch_size",
                 cfg["train"]["per_device_train_batch_size"],
             )
-            sft_kwargs["eval_strategy"] = cfg["train"].get("eval_strategy", "epoch")
+            eval_strategy = cfg["train"].get("eval_strategy", "epoch")
+            sft_kwargs["eval_strategy"] = eval_strategy
+            if eval_strategy == "steps" and "eval_steps" in cfg["train"]:
+                sft_kwargs["eval_steps"] = cfg["train"]["eval_steps"]
             # load_best_model_at_end is incompatible with DDP + QLoRA (Trainer tries
             # to reload with device_map='auto', conflicting with the per-rank device map).
             # The final checkpoint is saved explicitly below instead.
