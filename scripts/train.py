@@ -1,5 +1,6 @@
 import os
 import argparse, json
+import importlib.util
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
@@ -15,10 +16,43 @@ from utils import (
 )
 
 
+def _resolve_attn_implementation(requested: str, is_main: bool = True) -> str:
+    """Pick a working attention implementation, falling back gracefully.
+
+    - "auto": prefer flash_attention_2 if installed, else sdpa.
+    - "flash_attention_2": fall back to sdpa if flash_attn isn't importable.
+    - "sdpa" / "eager": pass through.
+    """
+    has_flash = importlib.util.find_spec("flash_attn") is not None
+
+    if requested in (None, "", "auto"):
+        chosen = "flash_attention_2" if has_flash else "sdpa"
+    elif requested == "flash_attention_2" and not has_flash:
+        chosen = "sdpa"
+        if is_main:
+            print(
+                "[WARN] attn_implementation='flash_attention_2' requested but flash_attn "
+                "is not installed. Falling back to 'sdpa'. To enable flash-attn run: "
+                "pip install flash-attn --no-build-isolation"
+            )
+    else:
+        chosen = requested
+
+    if is_main:
+        print(f"[INFO] Using attn_implementation: {chosen}")
+    return chosen
+
+
 # ------------------------------------------------
 # Model loading (supports QLoRA)
 # ------------------------------------------------
-def load_model(hf_id: str, four_bit: bool, lora_cfg: LoraConfig, local_rank: int = 0):
+def load_model(
+    hf_id: str,
+    four_bit: bool,
+    lora_cfg: LoraConfig,
+    local_rank: int = 0,
+    attn_implementation: str = "auto",
+):
     quant = None
     if four_bit and torch.cuda.is_available():
         quant = BitsAndBytesConfig(
@@ -33,9 +67,13 @@ def load_model(hf_id: str, four_bit: bool, lora_cfg: LoraConfig, local_rank: int
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
+    chosen_attn = _resolve_attn_implementation(
+        attn_implementation, is_main=(local_rank == 0)
+    )
+
     model_kwargs = {
         "dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
-        "attn_implementation": "flash_attention_2", #eager
+        "attn_implementation": chosen_attn,
     }
     if torch.cuda.is_available():
         model_kwargs["device_map"] = {"" : local_rank}
@@ -134,8 +172,18 @@ def main():
         if four_bit and not has_cuda:
             four_bit = False
 
+        # Resolution order: per-model override > global train.attn_implementation > "auto"
+        attn_impl = ovr.get(
+            "attn_implementation",
+            cfg["train"].get("attn_implementation", "auto"),
+        )
+
         tokenizer, model = load_model(
-            mcfg["hf_id"], four_bit=four_bit, lora_cfg=lora_cfg, local_rank=local_rank
+            mcfg["hf_id"],
+            four_bit=four_bit,
+            lora_cfg=lora_cfg,
+            local_rank=local_rank,
+            attn_implementation=attn_impl,
         )
 
         out_dir = os.path.join(cfg["paths"]["lora_out"], alias)

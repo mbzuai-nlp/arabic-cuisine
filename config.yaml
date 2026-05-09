@@ -38,6 +38,11 @@ train:
   fp16: false
   gradient_checkpointing: true
 
+  # Attention backend: "auto" picks flash_attention_2 if installed, else sdpa.
+  # Override per-model in models.yaml under lora_overrides.<alias>.attn_implementation
+  # if you want to force a specific kernel.
+  attn_implementation: "auto"
+
   lora_defaults:
     r: 16
     alpha: 32
