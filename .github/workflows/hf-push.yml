@@ -23,7 +23,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install huggingface_hub
-        run: pip install --upgrade "huggingface_hub[cli]" pyarrow
+        run: pip install --upgrade "huggingface_hub[cli]"  # add pyarrow when IFT is re-enabled
 
       - name: Stage card, benchmark, and IFT data
         run: |
@@ -31,25 +31,29 @@ jobs:
           cp -r hf/. staging/
           cp data/benchmark/aracuisine_bench_option_order_v*.json staging/bench/
           cp data/benchmark/aracuisine_bench_manifest.tsv staging/bench/
-          # Merge the 10 line-aligned parts, in order, into one zstd-compressed Parquet file
-          python - <<'EOF'
-          import glob, lzma, pyarrow.json as pj, pyarrow.parquet as pq
-          parts = sorted(glob.glob("data/ift/arabic_cuisine_sft_data_part*.jsonl.xz"))
-          writer, rows = None, 0
-          for p in parts:
-              with lzma.open(p, "rb") as f:
-                  t = pj.read_json(f)
-              t = t.select(["instruction", "input", "output", "language"])
-              if writer is None:
-                  writer = pq.ParquetWriter("staging/ift/aracuisine_ift.parquet", t.schema,
-                                            compression="zstd", compression_level=9)
-              writer.write_table(t, row_group_size=50_000)
-              rows += t.num_rows
-          writer.close()
-          print("rows:", rows)
-          assert rows == 475654, rows
-          EOF
-          ls -lh staging/ift
+          # AraCuisine-IFT is disabled until MBZUAI's Hugging Face storage limit is raised.
+          # To re-enable: uncomment the block below, remove the `rm -rf staging/ift` line,
+          # and uncomment the `ift` config in hf/README.md.
+          rm -rf staging/ift
+          # # Merge the 10 line-aligned parts, in order, into one zstd-compressed Parquet file
+          # python - <<'EOF'
+          # import glob, lzma, pyarrow.json as pj, pyarrow.parquet as pq
+          # parts = sorted(glob.glob("data/ift/arabic_cuisine_sft_data_part*.jsonl.xz"))
+          # writer, rows = None, 0
+          # for p in parts:
+          #     with lzma.open(p, "rb") as f:
+          #         t = pj.read_json(f)
+          #     t = t.select(["instruction", "input", "output", "language"])
+          #     if writer is None:
+          #         writer = pq.ParquetWriter("staging/ift/aracuisine_ift.parquet", t.schema,
+          #                                   compression="zstd", compression_level=9)
+          #     writer.write_table(t, row_group_size=50_000)
+          #     rows += t.num_rows
+          # writer.close()
+          # print("rows:", rows)
+          # assert rows == 475654, rows
+          # EOF
+          # ls -lh staging/ift
           find staging -type f | sort
 
       - name: Upload to dataset root

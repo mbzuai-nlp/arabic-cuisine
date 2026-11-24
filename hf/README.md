@@ -39,10 +39,11 @@ configs:
     data_files:
       - split: test
         path: bench/aracuisine_bench_option_order_v5.json
-  - config_name: ift
-    data_files:
-      - split: train
-        path: ift/aracuisine_ift.parquet
+  # AraCuisine-IFT: re-enable once uploaded
+  # - config_name: ift
+  #   data_files:
+  #     - split: train
+  #       path: ift/aracuisine_ift.parquet
 ---
 
 <h1 align="center">AraCuisine: Culturally Grounded Instruction Tuning and Benchmarking for Arabic Culinary Reasoning</h1>
@@ -102,8 +103,8 @@ from datasets import load_dataset
 # Benchmark (one config per option order)
 bench = load_dataset("MBZUAI/AraCuisine", "bench_v1", split="test")
 
-# Instruction-tuning data
-ift = load_dataset("MBZUAI/AraCuisine", "ift", split="train")
+# Instruction-tuning data (coming soon)
+# ift = load_dataset("MBZUAI/AraCuisine", "ift", split="train")
 ```
 
 ## AraCuisine-Bench
@@ -193,6 +194,8 @@ In the paper, options are scored by log-likelihood with
 
 ## AraCuisine-IFT
 
+> **Coming soon.** The instruction-tuning data will be added to this repository shortly.
+
 Each pair is generated from structured recipe evidence, then rewritten for natural,
 varied Arabic while keeping its label and evidence fixed. Tasks cover culinary
 knowledge and execution (ingredients, steps, techniques, times, temperatures) and
@@ -251,7 +254,7 @@ bench/
 ├── aracuisine_bench_option_order_v{1..5}.json   # 5 option orders
 ├── aracuisine_bench_manifest.tsv                # item IDs, categories, cultural subset
 └── stats.json
-ift/
+ift/                                             # coming soon
 ├── aracuisine_ift.parquet                       # 475,654 pairs (~170 MB, zstd)
 └── stats.json
 ```
