@@ -58,7 +58,7 @@ configs:
 </p>
 
 <p align="center">
-  <a href="https://github.com/mbzuai-nlp/arabic-cuisines"><img src="https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="https://github.com/mbzuai-nlp/arabic-cuisine"><img src="https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white" alt="GitHub"></a>
   <img src="https://img.shields.io/badge/Paper-EACL%202027-B31B1B" alt="Paper: EACL 2027">
   <a href="https://huggingface.co/datasets/MBZUAI/AraCuisine-IFT"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Companion-AraCuisine--IFT-FFD21E" alt="AraCuisine-IFT"></a>
 </p>
@@ -83,7 +83,7 @@ option orders** to remove gold-answer position bias.
 | Format     | Single-answer multiple choice (5 options)             |
 | Versions   | 5 option orders (`v1` to `v5`)                    |
 | Categories | 7 reasoning categories (15 fine-grained labels)       |
-| Files      | `aracuisine_bench_option_order_v{1..5}.json`, `stats.json` |
+| Files      | `aracuisine_bench_option_order_v{1..5}.json`, `aracuisine_bench_manifest.tsv`, `stats.json` |
 
 ## Schema
 
@@ -134,6 +134,22 @@ files are released exactly as used, so the reported numbers can be reproduced.
 Per-label counts and the gold-answer position counts for each version are in
 [`stats.json`](stats.json).
 
+## Manifest
+
+[`aracuisine_bench_manifest.tsv`](aracuisine_bench_manifest.tsv) has one row per item, in
+the same order as the five version files:
+
+| Column               | Description                                                                       |
+| -------------------- | --------------------------------------------------------------------------------- |
+| `item_id`            | Stable identifier (`aracuisine-0000` to `aracuisine-1531`)                       |
+| `doc_id`             | Position of the item in every version file, as logged by lm-evaluation-harness   |
+| `original_category`  | Fine-grained label, same as `category` in the data                                |
+| `reasoning_category` | One of the 7 reasoning categories used in the paper                               |
+| `cultural_subset`    | `true` for the 302 Geographic, Religious, and Dietary/Health/Lifestyle items      |
+
+Use it to join predictions across versions and models, and to compute the
+per-category and cultural-subset scores reported in the paper.
+
 ## Usage
 
 ```python
@@ -155,6 +171,14 @@ broken down by category.
 ```python
 versions = ["v1", "v2", "v3", "v4", "v5"]
 data = {v: load_dataset("MBZUAI/AraCuisine-Bench", v, split="test") for v in versions}
+
+# Item IDs, reasoning categories, and the cultural-subset flag
+manifest = load_dataset(
+    "csv",
+    data_files="hf://datasets/MBZUAI/AraCuisine-Bench/aracuisine_bench_manifest.tsv",
+    delimiter="\t",
+    split="train",
+)
 ```
 
 In the paper, options are scored by log-likelihood with

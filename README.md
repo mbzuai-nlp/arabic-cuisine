@@ -82,6 +82,9 @@ The pipeline ends in two released resources:
 - [`data/benchmark/`](data/benchmark/): **AraCuisine-Bench** in five option orders
   (`aracuisine_bench_option_order_v1.json` to `_v5.json`). Each item holds `question`,
   `options`, `correct_answer`, and `category`. See [Option-order versions](#option-order-versions).
+  `aracuisine_bench_manifest.tsv` adds a stable `item_id`, the `doc_id` (position in
+  every version file), the 7-way `reasoning_category`, and the `cultural_subset` flag
+  for the 302 cultural items.
 - [`data/ift/`](data/ift/): **AraCuisine-IFT**, 475,654 `instruction`, `input`, `output`
   records (~1.2 GB) stored as 10 xz-compressed JSONL parts (~100 MB in total), used by
   the code in [`IFT/`](IFT/).
@@ -92,7 +95,7 @@ dataset criteria, not medical or religious advice.
 ## Repository layout
 
 ```
-arabic-cuisines/
+arabic-cuisine/
 ├── data/
 │   ├── benchmark/     # AraCuisine-Bench, 5 option-order versions (v1-v5)
 │   └── ift/           # AraCuisine-IFT, 10 xz-compressed JSONL parts
@@ -130,7 +133,9 @@ bash eval.sh        # base models + adapters; results in eval_results/
 ```
 
 Run the task once per version by pointing `data_files` in the lm-eval task config to
-each file in `data/benchmark/`, then average the five accuracies.
+each file in `data/benchmark/`, then average the five accuracies. To get per-category
+and cultural-subset scores, join lm-eval's per-sample logs (`--log_samples`) with
+`data/benchmark/aracuisine_bench_manifest.tsv` on `doc_id`.
 
 ## Instruction fine-tuning
 
@@ -146,8 +151,8 @@ cd IFT
 ## Setup
 
 ```bash
-git clone git@github.com:mbzuai-nlp/arabic-cuisines.git
-cd arabic-cuisines
+git clone git@github.com:mbzuai-nlp/arabic-cuisine.git
+cd arabic-cuisine
 pip install -r requirements.txt
 ```
 

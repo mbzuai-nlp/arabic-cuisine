@@ -30,6 +30,7 @@ jobs:
           mkdir -p staging
           cp hf/AraCuisine-Bench/* staging/
           cp data/benchmark/aracuisine_bench_option_order_v*.json staging/
+          cp data/benchmark/aracuisine_bench_manifest.tsv staging/
 
       - name: Upload to dataset root
         env:

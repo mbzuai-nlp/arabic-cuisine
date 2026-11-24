@@ -41,7 +41,7 @@ configs:
 </p>
 
 <p align="center">
-  <a href="https://github.com/mbzuai-nlp/arabic-cuisines"><img src="https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="https://github.com/mbzuai-nlp/arabic-cuisine"><img src="https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white" alt="GitHub"></a>
   <img src="https://img.shields.io/badge/Paper-EACL%202027-B31B1B" alt="Paper: EACL 2027">
   <a href="https://huggingface.co/datasets/MBZUAI/AraCuisine-Bench"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Companion-AraCuisine--Bench-FFD21E" alt="AraCuisine-Bench"></a>
 </p>
@@ -117,7 +117,7 @@ In the paper, five models (ALLaM-7B, Gemma-3-12B, Fanar-1-9B, Llama-3-8B, Qwen3-
 were fine-tuned with LoRA (rank 16, 7,437 steps, effective batch 32) using each
 model's chat template. Accuracy on AraCuisine-Bench rose for all five, by 2.43 to
 9.22 points. Training code and the full configuration are in the
-[GitHub repository](https://github.com/mbzuai-nlp/arabic-cuisines/tree/main/IFT).
+[GitHub repository](https://github.com/mbzuai-nlp/arabic-cuisine/tree/main/IFT).
 
 ## Sources
 
