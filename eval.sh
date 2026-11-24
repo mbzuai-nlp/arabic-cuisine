@@ -33,7 +33,7 @@
 #   * huggingface_hub:   pip install huggingface_hub
 #   * peft:              pip install peft
 #   * HF_TOKEN exported (the ArabicCuisineLab repos are private)
-#   * Data file at: /Users/sarfrazahmad/Research/arabic-cuisines/data/final_cuisine_benchmark.json
+#   * Data files at: data/benchmark/aracuisine_bench_option_order_v{1..5}.json (one run per version)
 # =============================================================================
 
 set -uo pipefail

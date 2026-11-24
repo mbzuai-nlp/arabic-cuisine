@@ -14,7 +14,7 @@ export CUDA_VISIBLE_DEVICES=0
 # ---------------------------------
 PYTHON_BIN=python
 TEST_SCRIPT="scripts/test.py"
-DATA_PATH="${DATA_PATH:-data}"
+DATA_PATH="${DATA_PATH:-../data/benchmark/aracuisine_bench_option_order_v1.json}"
 OUTPUT_DIR="outputs/sft"
 
 # Explicit model list (recommended)

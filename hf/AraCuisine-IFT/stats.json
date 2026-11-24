@@ -1,0 +1,15 @@
+{
+  "total": 475654,
+  "language": {
+    "ar": 475654
+  },
+  "records_with_input": 0,
+  "instruction_words": {
+    "mean": 19.0,
+    "median": 18.0
+  },
+  "output_words": {
+    "mean": 196.7,
+    "median": 171.0
+  }
+}

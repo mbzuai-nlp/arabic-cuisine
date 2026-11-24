@@ -28,7 +28,13 @@ pip install -r ../requirements.txt
 
 ## Data
 
-Download AraCuisine-IFT from Hugging Face (link in the [main README](../README.md)) and place it under `IFT/data/`, or point `DATASET` to its location.
+AraCuisine-IFT ships in [`../data/ift/`](../data/ift/) as 10 xz-compressed JSONL parts. Unpack them once from the repository root:
+
+```bash
+xz -dk data/ift/*.jsonl.xz
+```
+
+This writes 10 `.jsonl` files (~1.2 GB, 475,654 records). The training script reads every `.jsonl` file in the folder, so no merging is needed.
 
 The scripts accept any of the following:
 
@@ -52,7 +58,8 @@ Each record follows this schema:
 Train every target listed under `train_targets` in `models.yaml`:
 
 ```bash
-DATASET=data/aracuisine_ift.jsonl ./run_sft_train.sh
+./run_sft_train.sh                              # uses ../data/ift
+DATASET=/path/to/other.jsonl ./run_sft_train.sh  # or any other data
 ```
 
 By default the launcher uses all 8 GPUs. Set `CUDA_VISIBLE_DEVICES` to use fewer. To run on a single process:
@@ -61,7 +68,7 @@ By default the launcher uses all 8 GPUs. Set `CUDA_VISIBLE_DEVICES` to use fewer
 python scripts/train.py \
   --config config.yaml \
   --models models.yaml \
-  --dataset data/aracuisine_ift.jsonl
+  --dataset ../data/ift
 ```
 
 Notes:

@@ -224,3 +224,6 @@ outputs/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Unpacked AraCuisine-IFT parts (the .jsonl.xz files are tracked)
+data/ift/*.jsonl

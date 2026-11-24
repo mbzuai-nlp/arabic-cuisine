@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 
 # Path to the AraCuisine-IFT training data (JSONL file, folder of JSONL files,
 # or a saved Hugging Face dataset). Override with DATASET=... ./run_sft_train.sh
-DATASET="${DATASET:-data/sft_pool_400k.jsonl}"
+DATASET="${DATASET:-../data/ift}"
 
 # ---------------------------------
 # Multi-GPU SFT Training Launcher

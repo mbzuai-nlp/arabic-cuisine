@@ -55,6 +55,7 @@ ift = load_dataset("MBZUAI/AraCuisine-IFT", split="train")
 | IFT pairs  | 475K+                                                                               |
 | Language   | Arabic (`ar`)                                                                       |
 | Format     | Single-answer multiple choice (5 options)                                           |
+| Versions   | 5 option orders (v1 to v5) to remove gold-answer position bias                      |
 | Categories | 7 (Procedural, Ingredients, Explanation, Provenance, Religious, Dietary, Technical) |
 | Sources    | ~65K recipes from 5 Arabic culinary platforms                                       |
 
@@ -78,11 +79,12 @@ to its recipe, its canonical ingredients, and its constraint labels.
 
 The pipeline ends in two released resources:
 
-- **AraCuisine-Bench**: the evaluation set, shipped here as
-  [`data/final_cuisine_benchmark.json`](data/final_cuisine_benchmark.json). Each item holds
-  `question`, `options`, `correct_answer`, and `category`.
-- **AraCuisine-IFT**: the training set of `instruction`, `input`, `output` records, used
-  by the code in [`IFT/`](IFT/).
+- [`data/benchmark/`](data/benchmark/): **AraCuisine-Bench** in five option orders
+  (`aracuisine_bench_option_order_v1.json` to `_v5.json`). Each item holds `question`,
+  `options`, `correct_answer`, and `category`. See [Option-order versions](#option-order-versions).
+- [`data/ift/`](data/ift/): **AraCuisine-IFT**, 475,654 `instruction`, `input`, `output`
+  records (~1.2 GB) stored as 10 xz-compressed JSONL parts (~100 MB in total), used by
+  the code in [`IFT/`](IFT/).
 
 Dietary and religious labels follow the operational rules in the paper. They are
 dataset criteria, not medical or religious advice.
@@ -91,7 +93,10 @@ dataset criteria, not medical or religious advice.
 
 ```
 arabic-cuisines/
-├── data/              # AraCuisine-Bench
+├── data/
+│   ├── benchmark/     # AraCuisine-Bench, 5 option-order versions (v1-v5)
+│   └── ift/           # AraCuisine-IFT, 10 xz-compressed JSONL parts
+├── hf/                # Hugging Face dataset cards and stats (synced by GitHub Action)
 ├── IFT/               # LoRA fine-tuning, testing, and inference code
 ├── eval.sh            # lm-evaluation-harness runner (base models + adapters)
 └── requirements.txt
@@ -100,8 +105,23 @@ arabic-cuisines/
 ## Evaluation
 
 Treat each item as a single-answer MCQ: present `question` + `options`, and score each
-option by log-likelihood. **Accuracy** is the primary metric. We average it over five
-option orders and recommend reporting it broken down by `category`.
+option by log-likelihood. **Accuracy** is the primary metric. Report the **mean ± std
+over the five option-order versions**, ideally broken down by `category`.
+
+### Option-order versions
+
+Models can favour an answer position (for example, always picking `A`). To remove this
+**gold-answer position bias**, every item is evaluated in five versions that differ only
+in the order of the options:
+
+- `v1` is the base order. `v2` to `v5` rotate the five options by one to four positions,
+  so each option, including the gold answer, appears once in every position.
+- Questions, option texts, gold answers, and item order are identical across versions.
+  Only the letters `A` to `E` and the position of each option change.
+- Within each version, gold answers are spread evenly over `A` to `E` (about 306 each).
+
+All results in the paper are the mean ± std over `v1` to `v5`. The five files are
+released as they were used, so the paper's numbers can be reproduced exactly.
 
 **Open models and LoRA adapters** (via [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)):
 
@@ -109,14 +129,18 @@ option orders and recommend reporting it broken down by `category`.
 bash eval.sh        # base models + adapters; results in eval_results/
 ```
 
+Run the task once per version by pointing `data_files` in the lm-eval task config to
+each file in `data/benchmark/`, then average the five accuracies.
+
 ## Instruction fine-tuning
 
 Training uses the paper's configuration (LoRA, 7,437 steps, effective batch 32). See
 [`IFT/README.md`](IFT/README.md) for details.
 
 ```bash
+xz -dk data/ift/*.jsonl.xz      # unpack the IFT parts (~1.2 GB)
 cd IFT
-DATASET=data/aracuisine_ift.jsonl ./run_sft_train.sh
+./run_sft_train.sh               # trains on ../data/ift/ by default
 ```
 
 ## Setup

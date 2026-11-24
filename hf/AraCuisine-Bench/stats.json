@@ -1,0 +1,67 @@
+{
+  "total": 1532,
+  "versions": 5,
+  "category_distribution": {
+    "Procedural Execution": 682,
+    "Ingredient Analysis": 356,
+    "Culinary Explanation": 145,
+    "Geographic Provenance": 119,
+    "Religious Compatibility": 102,
+    "Dietary/Health/Lifestyle Compliance": 81,
+    "Technical Parameters": 47
+  },
+  "label_distribution": {
+    "steps": 682,
+    "ingredients": 356,
+    "explanation": 145,
+    "country": 72,
+    "region": 47,
+    "not_suitable_moslems": 46,
+    "temperature": 29,
+    "suitable_diabetics": 24,
+    "not_suitable_diabetics": 20,
+    "not_suitable_vegetarians": 20,
+    "suitable_christians": 20,
+    "time": 18,
+    "not_suitable_christians": 18,
+    "not_suitable_jews": 18,
+    "suitable_vegetarians": 17
+  },
+  "gold_position_by_version": {
+    "v1": {
+      "A": 307,
+      "B": 306,
+      "C": 306,
+      "D": 306,
+      "E": 307
+    },
+    "v2": {
+      "A": 306,
+      "B": 306,
+      "C": 306,
+      "D": 307,
+      "E": 307
+    },
+    "v3": {
+      "A": 306,
+      "B": 307,
+      "C": 307,
+      "D": 307,
+      "E": 305
+    },
+    "v4": {
+      "A": 307,
+      "B": 307,
+      "C": 307,
+      "D": 305,
+      "E": 306
+    },
+    "v5": {
+      "A": 307,
+      "B": 307,
+      "C": 306,
+      "D": 306,
+      "E": 306
+    }
+  }
+}
