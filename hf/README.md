@@ -42,7 +42,7 @@ configs:
   - config_name: ift
     data_files:
       - split: train
-        path: ift/aracuisine_ift.jsonl
+        path: ift/aracuisine_ift.parquet
 ---
 
 <h1 align="center">AraCuisine: Culturally Grounded Instruction Tuning and Benchmarking for Arabic Culinary Reasoning</h1>
@@ -252,7 +252,7 @@ bench/
 ├── aracuisine_bench_manifest.tsv                # item IDs, categories, cultural subset
 └── stats.json
 ift/
-├── aracuisine_ift.jsonl                         # 475,654 pairs (~1.2 GB)
+├── aracuisine_ift.parquet                       # 475,654 pairs (~170 MB, zstd)
 └── stats.json
 ```
 
