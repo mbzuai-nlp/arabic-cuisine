@@ -4,8 +4,7 @@
 
 <p align="center">
    <a href=""><img src="https://img.shields.io/badge/Paper-arXiv-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white" alt="Paper"></a>
-  <a href="https://huggingface.co/datasets/MBZUAI/AraCuisine-Bench"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Benchmark-FFD21E?style=for-the-badge" alt="Hugging Face Benchmark"></a>
-  <a href="https://huggingface.co/datasets/MBZUAI/AraCuisine-IFT"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-IFT%20Data-FFD21E?style=for-the-badge" alt="Hugging Face IFT Data"></a>
+  <a href="https://huggingface.co/datasets/MBZUAI/AraCuisine"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset-FFD21E?style=for-the-badge" alt="Hugging Face Dataset"></a>
   <a href="#citation"><img src="https://img.shields.io/badge/Paper-EACL%202027-B31B1B?style=for-the-badge" alt="Paper"></a>
   <img src="https://img.shields.io/badge/Questions-1%2C532-4C9A2A?style=for-the-badge" alt="Questions">
   <img src="https://img.shields.io/badge/Language-Arabic-0E7C3A?style=for-the-badge" alt="Language: Arabic">
@@ -37,14 +36,13 @@ on factual, procedural, regional, and dietary or religious reasoning.
 
 This repository holds the **evaluation harness and fine-tuning code**.
 The released data lives on the Hugging Face Hub at
-[`MBZUAI/AraCuisine-Bench`](https://huggingface.co/datasets/MBZUAI/AraCuisine-Bench) and
-[`MBZUAI/AraCuisine-IFT`](https://huggingface.co/datasets/MBZUAI/AraCuisine-IFT):
+[`MBZUAI/AraCuisine`](https://huggingface.co/datasets/MBZUAI/AraCuisine):
 
 ```python
 from datasets import load_dataset
 
-bench = load_dataset("MBZUAI/AraCuisine-Bench", split="test")
-ift = load_dataset("MBZUAI/AraCuisine-IFT", split="train")
+bench = load_dataset("MBZUAI/AraCuisine", "bench_v1", split="test")  # bench_v1 ... bench_v5
+ift = load_dataset("MBZUAI/AraCuisine", "ift", split="train")
 ```
 
 ## Dataset at a glance
@@ -99,7 +97,7 @@ arabic-cuisine/
 ├── data/
 │   ├── benchmark/     # AraCuisine-Bench, 5 option-order versions (v1-v5)
 │   └── ift/           # AraCuisine-IFT, 10 xz-compressed JSONL parts
-├── hf/                # Hugging Face dataset cards and stats (synced by GitHub Action)
+├── hf/                # Hugging Face dataset card and stats (synced by GitHub Action)
 ├── IFT/               # LoRA fine-tuning, testing, and inference code
 ├── eval.sh            # lm-evaluation-harness runner (base models + adapters)
 └── requirements.txt
