@@ -3,6 +3,15 @@ license: cc-by-nc-4.0
 language:
   - ar
 pretty_name: AraCuisine
+annotations_creators:
+  - expert-generated
+language_creators:
+  - found
+  - machine-generated
+multilinguality:
+  - monolingual
+source_datasets:
+  - original
 size_categories:
   - 1K<n<10K
   - 100K<n<1M
@@ -10,6 +19,9 @@ task_categories:
   - question-answering
   - multiple-choice
   - text-generation
+task_ids:
+  - multiple-choice-qa
+  - open-domain-qa
 tags:
   - arabic
   - cuisine
@@ -51,10 +63,12 @@ configs:
 <p align="center">
   <b>Abed Alhakim Freihat</b><sup>1</sup> &nbsp;·&nbsp;
   <b>Younes Samih</b><sup>2</sup> &nbsp;·&nbsp;
-  <b>Mostafa Awad</b><sup>1</sup> &nbsp;·&nbsp;
+  <b>Mostafa Awad</b><sup>1</sup>
+  <br>
   <b>Mohamed Anwar</b><sup>1</sup> &nbsp;·&nbsp;
   <b>Sarfraz Ahmad</b><sup>1</sup> &nbsp;·&nbsp;
-  <b>Farah Atif</b><sup>1</sup> &nbsp;·&nbsp;
+  <b>Farah Atif</b><sup>1</sup>
+  <br>
   <b>Momina Ahsan</b><sup>1</sup> &nbsp;·&nbsp;
   <b>George Ibrahim</b><sup>1</sup> &nbsp;·&nbsp;
   <b>Fajri Koto</b><sup>1</sup> &nbsp;·&nbsp;
@@ -66,8 +80,7 @@ configs:
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Paper-EACL%202027-B31B1B" alt="Paper: EACL 2027">
-  <a href="https://github.com/mbzuai-nlp/arabic-cuisine"><img src="https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="#citation"><img src="https://img.shields.io/badge/Paper-EACL%202027-B31B1B" alt="Paper: EACL 2027" style="display:inline-block"></a>&nbsp;<a href="https://github.com/mbzuai-nlp/arabic-cuisine"><img src="https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white" alt="GitHub" style="display:inline-block"></a>
 </p>
 
 ---
@@ -90,10 +103,10 @@ generated, so the two parts never overlap.
 | Size            | 1,532 questions                                | 475,654 pairs                                  |
 | Language        | Arabic (`ar`)                                  | Arabic (`ar`)                                  |
 | Format          | Single-answer multiple choice (5 options)      | Instruction–response                           |
-| Configs         | `bench_v1` to `bench_v5` (5 option orders)     | `ift`                                          |
+| Configs         | `bench_v1` to `bench_v5` (5 option orders)     | `ift` (coming soon)                            |
 | Split           | `test`                                         | `train`                                        |
 | Validation      | 3 native annotators, Cohen's κ = 0.87          | Expert-validated ingredient layer, κ = 0.90    |
-| Folder          | `bench/`                                       | `ift/`                                         |
+| Where           | `bench/` in this repository                    | [`data/ift/` on GitHub](https://github.com/mbzuai-nlp/arabic-cuisine/tree/main/data/ift) (HF soon) |
 
 ## Usage
 
@@ -103,8 +116,8 @@ from datasets import load_dataset
 # Benchmark (one config per option order)
 bench = load_dataset("MBZUAI/AraCuisine", "bench_v1", split="test")
 
-# Instruction-tuning data (coming soon)
-# ift = load_dataset("MBZUAI/AraCuisine", "ift", split="train")
+# Instruction-tuning data: coming soon here, available now on GitHub
+# https://github.com/mbzuai-nlp/arabic-cuisine/tree/main/data/ift
 ```
 
 ## AraCuisine-Bench
@@ -194,7 +207,10 @@ In the paper, options are scored by log-likelihood with
 
 ## AraCuisine-IFT
 
-> **Coming soon.** The instruction-tuning data will be added to this repository shortly.
+> **Coming soon to Hugging Face.** The instruction-tuning data will be added to this
+> repository shortly. Until then, it is available in the
+> [GitHub repository](https://github.com/mbzuai-nlp/arabic-cuisine/tree/main/data/ift)
+> as 10 xz-compressed JSONL parts. Unpack them with `xz -dk data/ift/*.jsonl.xz`.
 
 Each pair is generated from structured recipe evidence, then rewritten for natural,
 varied Arabic while keeping its label and evidence fixed. Tasks cover culinary
