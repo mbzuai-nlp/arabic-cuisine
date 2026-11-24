@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Run from the IFT/ directory regardless of where the script is called from
+cd "$(dirname "$0")"
+
+# Path to the AraCuisine-IFT training data (JSONL file, folder of JSONL files,
+# or a saved Hugging Face dataset). Override with DATASET=... ./run_sft_train.sh
+DATASET="${DATASET:-data/sft_pool_400k.jsonl}"
+
 # ---------------------------------
 # Multi-GPU SFT Training Launcher
 # ---------------------------------
@@ -31,4 +38,4 @@ torchrun \
   scripts/train.py \
   --config config.yaml \
   --models models.yaml \
-  --dataset data/sft_pool_400k.jsonl
+  --dataset "${DATASET}"

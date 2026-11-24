@@ -6,8 +6,9 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from scripts.utils import (
-    format_instruction_prompt,
+from utils import (
+    read_prompt_format,
+    render_prompt,
     load_instruction_datasets,
     select_dataset_split,
 )
@@ -39,9 +40,10 @@ def load_sft_lora_model(adapter_path: str):
 
 
 @torch.no_grad()
-def generate(model, tokenizer, prompt: str, max_new_tokens: int) -> str:
+def generate(model, tokenizer, prompt: str, max_new_tokens: int, add_special_tokens: bool = True) -> str:
     model_device = next(model.parameters()).device
-    inputs = tokenizer(prompt, return_tensors="pt").to(model_device)
+    # Chat-template prompts already contain BOS and role tokens.
+    inputs = tokenizer(prompt, return_tensors="pt", add_special_tokens=add_special_tokens).to(model_device)
     outputs = model.generate(
         **inputs,
         max_new_tokens=max_new_tokens,
@@ -95,9 +97,16 @@ def main():
         instruction = args.instruction or ""
         input_text = args.input_text
 
-    prompt = format_instruction_prompt(instruction, input_text, output_text=None)
     tokenizer, model = load_sft_lora_model(args.model_path)
-    response = generate(model, tokenizer, prompt, args.max_new_tokens)
+    prompt_format = read_prompt_format(args.model_path)
+    prompt = render_prompt(tokenizer, instruction, input_text, prompt_format)
+    response = generate(
+        model,
+        tokenizer,
+        prompt,
+        args.max_new_tokens,
+        add_special_tokens=(prompt_format != "chat_template"),
+    )
 
     print("Prompt:\n")
     print(prompt)

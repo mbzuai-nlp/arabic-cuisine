@@ -7,6 +7,8 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from trl import SFTTrainer, SFTConfig
 
 from utils import (
+    PROMPT_FORMATS,
+    build_chat_messages,
     ensure_dir,
     format_instruction_prompt,
     load_instruction_datasets,
@@ -105,6 +107,22 @@ def formatting_func_builder():
     return format_example
 
 
+def to_chat_dataset(dataset):
+    """Convert instruction records to conversational records so TRL applies the
+    model-specific chat template (the setup used in the paper)."""
+
+    def convert(example):
+        return {
+            "messages": build_chat_messages(
+                example["instruction"],
+                example.get("input", ""),
+                example["output"],
+            )
+        }
+
+    return dataset.map(convert, remove_columns=dataset.column_names)
+
+
 # ------------------------------------------------
 # Main
 # ------------------------------------------------
@@ -146,6 +164,10 @@ def main():
             print(
                 f"[INFO] Loaded {len(eval_dataset)} evaluation samples from split '{eval_split_name}'"
             )
+
+    prompt_format = cfg["train"].get("prompt_format", "chat_template")
+    if prompt_format not in PROMPT_FORMATS:
+        raise ValueError(f"train.prompt_format must be one of {PROMPT_FORMATS}, got {prompt_format!r}")
 
     total = len(reg["train_targets"])
     for idx, alias in enumerate(reg["train_targets"], start=1):
@@ -191,12 +213,18 @@ def main():
         log_dir = os.path.join(cfg["paths"]["logs_out"], alias)
         ensure_dir(log_dir)
 
+        if prompt_format == "chat_template" and not getattr(tokenizer, "chat_template", None):
+            raise ValueError(f"{mcfg['hf_id']} has no chat template; set train.prompt_format: alpaca")
+
         save_strategy = cfg["train"].get("save_strategy", "epoch")
         sft_kwargs = dict(
             output_dir=out_dir,
-            logging_dir=log_dir,
-            num_train_epochs=cfg["train"]["num_train_epochs"],
+            max_steps=cfg["train"].get("max_steps", -1),
+            num_train_epochs=cfg["train"].get("num_train_epochs", 1),
             learning_rate=cfg["train"]["learning_rate"],
+            lr_scheduler_type=cfg["train"].get("lr_scheduler_type", "linear"),
+            optim=cfg["train"].get("optim", "adamw_torch"),
+            seed=cfg.get("seed", 42),
             weight_decay=cfg["train"]["weight_decay"],
             per_device_train_batch_size=cfg["train"]["per_device_train_batch_size"],
             gradient_accumulation_steps=cfg["train"]["gradient_accumulation_steps"],
@@ -208,10 +236,10 @@ def main():
             bf16=cfg["train"]["bf16"] and has_cuda,
             gradient_checkpointing=cfg["train"]["gradient_checkpointing"],
             gradient_checkpointing_kwargs={"use_reentrant": False},
-            dataloader_num_workers=4,
-            dataloader_pin_memory=has_cuda,
+            dataloader_num_workers=cfg["train"].get("dataloader_num_workers", 2),
+            dataloader_pin_memory=cfg["train"].get("dataloader_pin_memory", True) and has_cuda,
             report_to="none",
-            packing=False,
+            packing=cfg["train"].get("packing", False),
             max_length=mcfg["max_len"],
             ddp_find_unused_parameters=True,
         )
@@ -219,7 +247,7 @@ def main():
         # Step-based saving requires save_steps; cap retained checkpoints if set.
         if save_strategy == "steps" and "save_steps" in cfg["train"]:
             sft_kwargs["save_steps"] = cfg["train"]["save_steps"]
-        if "save_total_limit" in cfg["train"]:
+        if cfg["train"].get("save_total_limit") is not None:
             sft_kwargs["save_total_limit"] = cfg["train"]["save_total_limit"]
 
         if eval_dataset is not None:
@@ -238,16 +266,29 @@ def main():
         else:
             sft_kwargs["eval_strategy"] = "no"
 
+        # Older TRL/transformers versions accept logging_dir; newer ones removed it.
+        if "logging_dir" in SFTConfig.__dataclass_fields__:
+            sft_kwargs["logging_dir"] = log_dir
+
         sft_args = SFTConfig(**sft_kwargs)
 
-        trainer = SFTTrainer(
-            model=model,
-            args=sft_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-            formatting_func=formatting_func_builder(),
-            processing_class=tokenizer,
-        )
+        if prompt_format == "chat_template":
+            trainer = SFTTrainer(
+                model=model,
+                args=sft_args,
+                train_dataset=to_chat_dataset(train_dataset),
+                eval_dataset=to_chat_dataset(eval_dataset) if eval_dataset is not None else None,
+                processing_class=tokenizer,
+            )
+        else:
+            trainer = SFTTrainer(
+                model=model,
+                args=sft_args,
+                train_dataset=train_dataset,
+                eval_dataset=eval_dataset,
+                formatting_func=formatting_func_builder(),
+                processing_class=tokenizer,
+            )
 
         if is_main:
             model.print_trainable_parameters()
@@ -264,6 +305,7 @@ def main():
                         "alias": alias,
                         "hf_id": mcfg["hf_id"],
                         "four_bit": four_bit,
+                        "prompt_format": prompt_format,
                         "train_size": len(train_dataset),
                         "eval_size": len(eval_dataset) if eval_dataset is not None else 0,
                         "dataset_path": args.dataset,

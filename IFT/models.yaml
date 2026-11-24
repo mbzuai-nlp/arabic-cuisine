@@ -1,0 +1,39 @@
+# models.yaml
+# Base models fine-tuned in the paper. All use the shared LoRA settings in
+# config.yaml (train.lora_defaults). Add an entry under lora_overrides only to
+# deviate from the paper setup for a specific model.
+
+base_models:
+  allam_7b:
+    hf_id: "humain-ai/ALLaM-7B-Instruct-preview"
+    max_len: 4096
+
+  gemma12b:
+    hf_id: "google/gemma-3-12b-it"
+    max_len: 8192
+
+  fanar_9b:
+    hf_id: "QCRI/Fanar-1-9B-Instruct"
+    max_len: 4096
+
+  llama33_8b:
+    hf_id: "meta-llama/Meta-Llama-3-8B-Instruct"
+    max_len: 8192
+
+  qwen3_8b:
+    hf_id: "Qwen/Qwen3-8B"
+    max_len: 4096
+
+  # Not reported in the paper.
+  jais_8b:
+    hf_id: "inceptionai/Jais-2-8B-Chat"
+    max_len: 4096
+
+train_targets:
+  - allam_7b
+  - gemma12b
+  - fanar_9b
+  - llama33_8b
+  - qwen3_8b
+
+lora_overrides: {}

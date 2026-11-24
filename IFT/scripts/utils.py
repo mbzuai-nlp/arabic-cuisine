@@ -122,6 +122,50 @@ def format_instruction_prompt(
     return "\n\n".join(lines)
 
 
+PROMPT_FORMATS = ("chat_template", "alpaca")
+
+
+def build_chat_messages(
+    instruction: str,
+    input_text: str = "",
+    output_text: Optional[str] = None,
+) -> List[Dict[str, str]]:
+    """Turn an instruction record into chat messages (user turn, optional assistant turn)."""
+    user_content = instruction.strip()
+    if input_text.strip():
+        user_content = f"{user_content}\n\n{input_text.strip()}"
+
+    messages = [{"role": "user", "content": user_content}]
+    if output_text is not None:
+        messages.append({"role": "assistant", "content": output_text.strip()})
+    return messages
+
+
+def render_prompt(
+    tokenizer,
+    instruction: str,
+    input_text: str = "",
+    prompt_format: str = "chat_template",
+) -> str:
+    """Build a generation prompt in the same format the adapter was trained with."""
+    if prompt_format == "chat_template" and getattr(tokenizer, "chat_template", None):
+        return tokenizer.apply_chat_template(
+            build_chat_messages(instruction, input_text),
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+    return format_instruction_prompt(instruction, input_text, output_text=None)
+
+
+def read_prompt_format(adapter_path: str, default: str = "alpaca") -> str:
+    """Read the prompt format stored in run_meta.json (older adapters default to alpaca)."""
+    meta_path = os.path.join(adapter_path, "run_meta.json")
+    if not os.path.exists(meta_path):
+        return default
+    with open(meta_path, "r", encoding="utf-8") as handle:
+        return json.load(handle).get("prompt_format", default)
+
+
 def ensure_dir(path: Optional[str]) -> Optional[str]:
     """Create the directory if it does not already exist."""
     if path:

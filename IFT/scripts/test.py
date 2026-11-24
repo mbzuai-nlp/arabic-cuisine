@@ -16,8 +16,9 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
 from utils import (
-    format_instruction_prompt,
     load_instruction_datasets,
+    read_prompt_format,
+    render_prompt,
     select_dataset_split,
 )
 
@@ -56,7 +57,7 @@ def load_sft_lora_model(adapter_path: str):
 # ------------------------------------------------
 # Prompt construction (MCQ → instruction)
 # ------------------------------------------------
-def build_prompt(record: Dict[str, Any]) -> str:
+def build_prompt(record: Dict[str, Any], tokenizer, prompt_format: str) -> str:
     question = str(record["question"]).strip()
     options = record.get("options", [])
 
@@ -74,10 +75,11 @@ def build_prompt(record: Dict[str, Any]) -> str:
 
     input_text = f"السؤال:\n{question}\n\n" f"الخيارات:\n{options_text}"
 
-    return format_instruction_prompt(
+    return render_prompt(
+        tokenizer,
         instruction=instruction,
         input_text=input_text,
-        output_text=None,
+        prompt_format=prompt_format,
     )
 
 
@@ -85,9 +87,10 @@ def build_prompt(record: Dict[str, Any]) -> str:
 # Generation
 # ------------------------------------------------
 @torch.no_grad()
-def generate(model, tokenizer, prompt: str, max_new_tokens: int = 64) -> str:
+def generate(model, tokenizer, prompt: str, max_new_tokens: int = 64, add_special_tokens: bool = True) -> str:
     model_device = next(model.parameters()).device
-    inputs = tokenizer(prompt, return_tensors="pt").to(model_device)
+    # Chat-template prompts already contain BOS and role tokens.
+    inputs = tokenizer(prompt, return_tensors="pt", add_special_tokens=add_special_tokens).to(model_device)
 
     outputs = model.generate(
         **inputs,
@@ -151,6 +154,8 @@ def main():
     print(f"[INFO] Resuming from {len(done_ids)} completed samples")
 
     tokenizer, model = load_sft_lora_model(args.model_path)
+    prompt_format = read_prompt_format(args.model_path)
+    print(f"[INFO] Prompt format: {prompt_format}")
 
     results = list(existing.values())
     start = time.time()
@@ -166,12 +171,13 @@ def main():
         print(f"[{idx}/{total_samples}] Processing ID={rid}")
 
         try:
-            prompt = build_prompt(record)
+            prompt = build_prompt(record, tokenizer, prompt_format)
             prediction = generate(
                 model,
                 tokenizer,
                 prompt,
                 max_new_tokens=args.max_new_tokens,
+                add_special_tokens=(prompt_format != "chat_template"),
             )
 
             item = {

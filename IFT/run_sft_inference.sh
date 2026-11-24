@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Run from the IFT/ directory regardless of where the script is called from
+cd "$(dirname "$0")"
+
 # ---------------------------------
 # Force usage of CUDA device 0 ONLY
 # ---------------------------------
@@ -11,17 +14,16 @@ export CUDA_VISIBLE_DEVICES=0
 # ---------------------------------
 PYTHON_BIN=python
 TEST_SCRIPT="scripts/test.py"
-DATA_PATH="data"
+DATA_PATH="${DATA_PATH:-data}"
 OUTPUT_DIR="outputs/sft"
 
 # Explicit model list (recommended)
 MODELS=(
-  "models/gemma12b"
-  "models/qwen3_8b"
-  "models/llama33_8b"
-  "models/jais_8b"
   "models/allam_7b"
+  "models/gemma12b"
   "models/fanar_9b"
+  "models/llama33_8b"
+  "models/qwen3_8b"
 )
 
 # Optional sample limit (comment out for full run)

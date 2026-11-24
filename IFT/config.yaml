@@ -1,0 +1,56 @@
+# config.yaml
+# Shared fine-tuning configuration for AraCuisine-IFT.
+# Values match Table 14 (Appendix A.4.1) of the paper.
+
+paths:
+  lora_out: "models"
+  logs_out: "outputs/logs"
+
+train:
+  # Prompt format: "chat_template" uses each model's own chat template (paper setup).
+  # "alpaca" uses the plain "Instruction: / Response:" format from utils.py.
+  prompt_format: "chat_template"
+
+  # Training length is set by steps. num_train_epochs is ignored when max_steps > 0.
+  max_steps: 7437
+
+  learning_rate: 1.0e-4
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  optim: "paged_adamw_8bit"
+
+  # Effective batch with 8 GPUs = 1 * 4 * 8 = 32
+  # (per_device_train_batch_size * gradient_accumulation_steps * num_gpus)
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 4
+
+  logging_steps: 50
+
+  save_strategy: "steps"
+  save_steps: 500
+  save_total_limit: null      # keep every checkpoint
+
+  # No validation split: train on all of AraCuisine-IFT.
+  eval_split: 0.0
+  eval_strategy: "no"
+
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+  attn_implementation: "sdpa"
+  packing: false
+
+  dataloader_num_workers: 2
+  dataloader_pin_memory: true
+
+  lora_defaults:
+    r: 16
+    alpha: 32
+    dropout: 0.05
+    target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    four_bit: true
+
+seed: 42
