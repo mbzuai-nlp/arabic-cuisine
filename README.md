@@ -78,14 +78,17 @@ to its recipe, its canonical ingredients, and its constraint labels.
 The pipeline ends in two released resources:
 
 - [`data/benchmark/`](data/benchmark/): **AraCuisine-Bench** in five option orders
-  (`aracuisine_bench_option_order_v1.json` to `_v5.json`). Each item holds `question`,
-  `options`, `correct_answer`, and `category`. See [Option-order versions](#option-order-versions).
+  (`aracuisine_bench_option_order_v1.json` to `_v5.json`). Each item holds `item_id`,
+  `question`, `options`, `correct_answer`, and `category`. See [Option-order versions](#option-order-versions).
   `aracuisine_bench_manifest.tsv` adds a stable `item_id`, the `doc_id` (position in
   every version file), the 7-way `reasoning_category`, and the `cultural_subset` flag
   for the 302 cultural items.
 - [`data/ift/`](data/ift/): **AraCuisine-IFT**, 475,654 `instruction`, `input`, `output`
   records (~1.2 GB) stored as 10 xz-compressed JSONL parts (~100 MB in total), used by
   the code in [`IFT/`](IFT/).
+- [`results/`](results/): the 50 prediction logs behind the paper's tables (5 models ×
+  base/IFT × 5 versions), the benchmark files they were scored on, and a script that
+  rebuilds every table from them.
 
 Dietary and religious labels follow the operational rules in the paper. They are
 dataset criteria, not medical or religious advice.
@@ -97,6 +100,7 @@ arabic-cuisine/
 ├── data/
 │   ├── benchmark/     # AraCuisine-Bench, 5 option-order versions (v1-v5)
 │   └── ift/           # AraCuisine-IFT, 10 xz-compressed JSONL parts
+├── results/           # paper prediction logs, evaluation snapshot, score.py
 ├── hf/                # Hugging Face dataset card and stats (synced by GitHub Action)
 ├── IFT/               # LoRA fine-tuning, testing, and inference code
 ├── eval.sh            # lm-evaluation-harness runner (base models + adapters)
@@ -116,13 +120,16 @@ Models can favour an answer position (for example, always picking `A`). To remov
 in the order of the options:
 
 - `v1` is the base order. `v2` to `v5` rotate the five options by one to four positions,
-  so each option, including the gold answer, appears once in every position.
+  so the gold answer sits in a different position in each version (all but one item).
 - Questions, option texts, gold answers, and item order are identical across versions.
   Only the letters `A` to `E` and the position of each option change.
 - Within each version, gold answers are spread evenly over `A` to `E` (about 306 each).
 
-All results in the paper are the mean ± std over `v1` to `v5`. The five files are
-released as they were used, so the paper's numbers can be reproduced exactly.
+All results in the paper are the mean ± std over five option-order versions. The
+paper was scored on an earlier snapshot of the benchmark, before typo fixes and before
+the versions were regenerated as rotations. That snapshot and all 50 prediction logs
+are in [`results/`](results/), and `python results/score.py` rebuilds the paper's
+tables from them exactly. Use `data/benchmark/` for new evaluations.
 
 **Open models and LoRA adapters** (via [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)):
 

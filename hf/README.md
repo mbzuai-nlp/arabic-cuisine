@@ -127,7 +127,8 @@ from related ingredients, steps, regions, or constraints.
 
 ```json
 {
-  "question": "نعتبر وصفة الحريرة من الوصفات الشهيرة في",
+  "item_id": "aracuisine-1230",
+  "question": "تعتبر وصفة الحريرة من الوصفات الشهيرة في",
   "options": ["A. المطبخ الكويتي", "B. المطبخ المغربي", "C. المطبخ المصري", "D. المطبخ اللبناني", "E. المطبخ الأردني"],
   "correct_answer": "B. المطبخ المغربي",
   "category": "country"
@@ -136,6 +137,7 @@ from related ingredients, steps, regions, or constraints.
 
 | Field            | Description                                          |
 | ---------------- | ---------------------------------------------------- |
+| `item_id`        | Stable identifier, same across all five versions     |
 | `question`       | Question stem in Arabic                              |
 | `options`        | Five answer strings, each prefixed with `A.` to `E.` |
 | `correct_answer` | The gold option, identical to one entry in `options` |
@@ -148,13 +150,16 @@ this **gold-answer position bias**, the benchmark ships in five versions that di
 only in the order of the options:
 
 - `bench_v1` is the base order. `bench_v2` to `bench_v5` rotate the five options by
-  one to four positions, so every option, including the gold answer, appears once in
-  each position.
+  one to four positions, so the gold answer sits in a different position in each
+  version (all but one item).
 - Questions, option texts, gold answers, and item order are identical across versions.
 - Within each version, gold answers are spread evenly over `A` to `E` (about 306 each).
 
-All results in the paper are the **mean ± std accuracy over the five versions**. The
-files are released exactly as used, so the reported numbers can be reproduced.
+All results in the paper are the **mean ± std accuracy over five option-order
+versions**. The paper was scored on an earlier snapshot of the benchmark, before typo
+fixes and before the versions were regenerated as rotations. That snapshot, all 50
+prediction logs, and a script that rebuilds the paper's tables exactly are in the
+[GitHub repository](https://github.com/mbzuai-nlp/arabic-cuisine/tree/main/results).
 
 ### Category distribution
 
@@ -292,7 +297,7 @@ Recipes were collected from five public Arabic culinary platforms: Atyab Tabkha
   Rare wording errors may remain.
 - Several benchmark questions share the same stem with different options (for
   example, "which of these recipes suits diabetics?"), so the stem alone is not a
-  unique key. Use `item_id` from the manifest instead.
+  unique key. Use `item_id` instead.
 
 ## Citation
 
