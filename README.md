@@ -86,6 +86,11 @@ The pipeline ends in two released resources:
 - [`data/ift/`](data/ift/): **AraCuisine-IFT**, 475,654 `instruction`, `input`, `output`
   records (~1.2 GB) stored as 10 xz-compressed JSONL parts (~100 MB in total), used by
   the code in [`IFT/`](IFT/).
+- [`data/ingredients/`](data/ingredients/): the canonical ingredient lexicon from the
+  semantic normalization step. `aracuisine_ingredient_variants.tsv` has one line per
+  canonical ingredient (460 in total), with the canonical name, a tab, and a
+  comma-separated list of the raw ingredient phrases mapped to it (about 25K). The file
+  has no header row.
 - [`results/`](results/): the 50 prediction logs behind the paper's tables (5 models ×
   base/IFT × 5 versions), the benchmark files they were scored on, and a script that
   rebuilds every table from them.
@@ -99,6 +104,7 @@ dataset criteria, not medical or religious advice.
 arabic-cuisine/
 ├── data/
 │   ├── benchmark/     # AraCuisine-Bench, 5 option-order versions (v1-v5)
+│   ├── ingredients/   # canonical ingredient lexicon (canonical name → raw variants)
 │   └── ift/           # AraCuisine-IFT, 10 xz-compressed JSONL parts
 ├── results/           # paper prediction logs, evaluation snapshot, score.py
 ├── hf/                # Hugging Face dataset card and stats (synced by GitHub Action)
