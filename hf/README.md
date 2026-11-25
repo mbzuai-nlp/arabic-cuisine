@@ -1,5 +1,5 @@
 ---
-license: cc-by-nc-4.0
+license: cc-by-4.0
 language:
   - ar
 pretty_name: AraCuisine
@@ -312,5 +312,5 @@ Recipes were collected from five public Arabic culinary platforms: Atyab Tabkha
 
 ## License
 
-Released under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). Users should also respect the
+The datasets are released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The code in the [GitHub repository](https://github.com/mbzuai-nlp/arabic-cuisine) is released under MIT. Users should also respect the
 terms of the original recipe sources.

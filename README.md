@@ -9,6 +9,8 @@
   <img src="https://img.shields.io/badge/Questions-1%2C532-4C9A2A?style=for-the-badge" alt="Questions">
   <img src="https://img.shields.io/badge/Language-Arabic-0E7C3A?style=for-the-badge" alt="Language: Arabic">
   <br>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/Code-MIT-3776AB?style=flat-square" alt="Code License: MIT"></a>
+  <a href="data/LICENSE"><img src="https://img.shields.io/badge/Data-CC%20BY%204.0-A41E11?style=flat-square" alt="Data License: CC BY 4.0"></a>
   <img src="https://img.shields.io/badge/IFT%20Pairs-475K%2B-A41E11?style=flat-square" alt="IFT Pairs: 475K+">
   <img src="https://img.shields.io/badge/Recipes-65K-2088FF?style=flat-square" alt="Recipes: 65K">
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.10+">
@@ -24,6 +26,7 @@
 - [Evaluation](#evaluation)
 - [Instruction fine-tuning](#instruction-fine-tuning)
 - [Setup](#setup)
+- [License](#license)
 - [Citation](#citation)
 
 ## TL;DR
@@ -169,6 +172,15 @@ pip install -r requirements.txt
 
 Set `HF_TOKEN` to download models, and provide API keys for zero-shot API runs via a
 `.env` file in the project root.
+
+## License
+
+- **Code** (`IFT/`, `results/score.py`, `eval.sh`, and workflows): [MIT](LICENSE).
+- **Data** (AraCuisine-Bench, AraCuisine-IFT, the ingredient lexicon, and the prediction
+  logs): [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). See [`data/LICENSE`](data/LICENSE).
+
+The data was derived from recipes on public Arabic culinary websites. Please also respect
+the terms of the original recipe sources.
 
 ## Citation
 
